@@ -1,0 +1,15 @@
+# dsh-plugin-question-index bundle patch
+#
+# 本文件是包自带的 `dsh.bundle.patch` 层：通过官方 CLI 安装时——
+#
+#   dsh plugin --profile web add dsh-plugin-question-index
+#
+# ——命令把包名追加进 profile 的 `dsh.profile.bundles`，profile boot 会合入
+# 这里的补丁（单条 insert），无需手改任何 profile 文件。
+#
+# 手动等价写法（不加 bundle 时）：把同样的 insert 写进
+# `~/.dsh/profiles/web/cordis.patch.yml`。
+
+- insert:
+    - id: question-index
+      name: 'dsh-plugin-question-index'

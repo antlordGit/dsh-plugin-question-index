@@ -1,0 +1,38 @@
+{
+  "name": "dsh-plugin-question-index",
+  "description": "问题索引：以可收起的悬浮面板展示当前会话的全部提问，支持搜索；点击任一提问自动滚动定位聊天内容到对应位置。",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "src",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build-client.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "deepseek-harness",
+    "question-index"
+  ]
+}
