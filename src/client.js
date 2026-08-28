@@ -19,33 +19,64 @@
  *   仅在 `aria-selected !== 'true'` 时点击；
  * - 全程 `typeof document` 守卫，找不到元素静默降级。
  *
- * 平台：Client（web）。样式走主题令牌（--dsw-alias-*），明暗主题自动适配。
+ * 视觉：全部颜色取自主题令牌（--dsw-alias-*），透明度衍生一律走
+ * `color-mix(in srgb, token, transparent)`，明暗主题自动一致；
+ * 先声明实色兜底再叠加 color-mix / backdrop-filter 渐进增强。
+ *
+ * 平台：Client（web）。
  */
 
 import React from 'react'
 
 const CSS = [
-  '.qif-wrap{position:absolute;inset:0;pointer-events:none}',
-  '.qif-panel{position:absolute;top:76px;right:16px;bottom:150px;width:304px;pointer-events:auto;display:flex;flex-direction:column;background:var(--dsw-alias-bg-overlay);border:1px solid var(--dsw-alias-border-l2);border-radius:12px;box-shadow:0 10px 32px rgba(0,0,0,.16);overflow:hidden}',
-  '.qif-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}',
-  '.qif-title{flex:1;font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary)}',
-  '.qif-btn{flex:none;height:24px;border-radius:7px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-secondary);font-size:11px;cursor:pointer;padding:0 8px}',
-  '.qif-btn:hover{color:var(--dsw-alias-label-primary);border-color:var(--dsw-alias-border-l2)}',
-  '.qif-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--dsw-alias-border-l1);flex:none}',
-  '.qif-count{font-size:11px;color:var(--dsw-alias-label-secondary);white-space:nowrap}',
-  '.qif-search{flex:1;min-width:0;height:26px;border-radius:7px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);padding:0 8px;font-size:12px;outline:none}',
-  '.qif-search:focus{border-color:var(--dsw-alias-brand-primary)}',
-  '.qif-list{flex:1;min-height:0;overflow-y:auto;padding:6px}',
-  '.qif-item{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin-bottom:2px;background:none;border:none;border-radius:8px;cursor:pointer;text-align:left;font:inherit;color:inherit}',
-  '.qif-item:hover{background:var(--dsw-alias-bg-layer-2)}',
-  '.qif-num{flex:none;min-width:20px;font-size:10px;font-weight:600;color:var(--dsw-alias-brand-primary);font-variant-numeric:tabular-nums}',
-  '.qif-preview{flex:1;min-width:0;font-size:12px;color:var(--dsw-alias-label-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-  '.qif-badge{flex:none;font-size:10px;border-radius:5px;padding:1px 5px;border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary)}',
-  '.qif-time{flex:none;font-size:10px;color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums}',
-  '.qif-empty{padding:26px 14px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:12px}',
-  '.qif-launcher{position:absolute;top:76px;right:16px;pointer-events:auto;display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-overlay);color:var(--dsw-alias-label-primary);font-size:12px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12)}',
-  '.qif-launcher:hover{border-color:var(--dsw-alias-brand-primary)}',
-  '.qif-launcherCount{font-size:10px;color:var(--dsw-alias-label-secondary)}',
+  /* ── 容器：浮层托管规则（不挡下方操作） ── */
+  '.qif-wrap{position:absolute;inset:0;pointer-events:none;font-variant-numeric:tabular-nums}',
+
+  /* ── 面板：玻璃质感 + 顶部内高光 + 双层柔和投影 + 入场动画 ── */
+  '.qif-panel{position:absolute;top:76px;right:16px;bottom:150px;width:312px;pointer-events:auto;display:flex;flex-direction:column;background:var(--dsw-alias-bg-overlay);background:color-mix(in srgb, var(--dsw-alias-bg-overlay) 92%, transparent);-webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15);border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 85%, transparent);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.16),0 2px 8px rgba(0,0,0,.08),inset 0 1px 0 color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);overflow:hidden;animation:qif-in .18s cubic-bezier(.2,.8,.3,1)}',
+  '@keyframes qif-in{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}',
+
+  /* ── 头部：品牌点 + 标题 + 计数胶囊 + 收起 ── */
+  '.qif-head{display:flex;align-items:center;gap:8px;padding:12px 10px 10px 14px;flex:none}',
+  '.qif-dot{flex:none;width:7px;height:7px;border-radius:50%;background:var(--dsw-alias-brand-primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--dsw-alias-brand-primary) 16%, transparent)}',
+  '.qif-title{flex:1;font-size:12.5px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-primary)}',
+  '.qif-chip{flex:none;font-size:10px;line-height:1;font-weight:600;padding:4px 7px;border-radius:99px;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 12%, transparent);color:var(--dsw-alias-brand-primary)}',
+  '.qif-btn{flex:none;width:24px;height:24px;padding:0;border-radius:8px;border:none;background:transparent;color:var(--dsw-alias-label-secondary);font-size:13px;line-height:1;cursor:pointer;transition:background .15s ease,color .15s ease}',
+  '.qif-btn:hover{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 12%, transparent);color:var(--dsw-alias-label-primary)}',
+
+  /* ── 工具行：搜索（聚焦品牌色柔光圈） ── */
+  '.qif-toolbar{display:flex;align-items:center;padding:0 12px 10px;flex:none}',
+  '.qif-search{flex:1;min-width:0;height:28px;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 75%, transparent);color:var(--dsw-alias-label-primary);padding:0 10px;font-size:12px;outline:none;transition:border-color .15s ease,box-shadow .15s ease}',
+  '.qif-search::placeholder{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}',
+  '.qif-search:focus{border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, var(--dsw-alias-border-l1));box-shadow:0 0 0 3px color-mix(in srgb, var(--dsw-alias-brand-primary) 13%, transparent)}',
+
+  /* ── 列表：独立滚动 + 细滚动条 ── */
+  '.qif-list{flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px;scrollbar-width:thin;scrollbar-color:color-mix(in srgb, var(--dsw-alias-border-l2) 60%, transparent) transparent}',
+  '.qif-list::-webkit-scrollbar{width:9px}',
+  '.qif-list::-webkit-scrollbar-thumb{background:color-mix(in srgb, var(--dsw-alias-border-l2) 55%, transparent);border-radius:5px;border:2px solid transparent;background-clip:content-box}',
+  '.qif-list::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb, var(--dsw-alias-border-l2) 90%, transparent);border:2px solid transparent;background-clip:content-box}',
+  '.qif-list::-webkit-scrollbar-track{background:transparent}',
+
+  /* ── 行：悬停着色 + 右侧滑入箭头 + 按压反馈 ── */
+  '.qif-item{position:relative;display:flex;align-items:center;gap:9px;width:100%;padding:8px 26px 8px 10px;margin-bottom:2px;background:none;border:none;border-radius:9px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:background .14s ease}',
+  '.qif-item:hover{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 9%, transparent)}',
+  '.qif-item:active{background:color-mix(in srgb, var(--dsw-alias-label-secondary) 14%, transparent)}',
+  '.qif-go{position:absolute;right:10px;top:50%;transform:translateY(-50%) translateX(-4px);font-size:11px;color:var(--dsw-alias-brand-primary);opacity:0;transition:opacity .15s ease,transform .15s ease}',
+  '.qif-item:hover .qif-go{opacity:1;transform:translateY(-50%) translateX(0)}',
+  '.qif-num{flex:none;min-width:18px;font-size:10px;font-weight:700;color:var(--dsw-alias-brand-primary);opacity:.9}',
+  '.qif-preview{flex:1;min-width:0;font-size:12.5px;line-height:1.45;color:var(--dsw-alias-label-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.qif-badge{flex:none;font-size:9.5px;line-height:1;font-weight:500;padding:3px 6px;border-radius:5px;color:var(--dsw-alias-label-secondary);background:color-mix(in srgb, var(--dsw-alias-label-secondary) 10%, transparent)}',
+  '.qif-time{flex:none;font-size:10px;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 75%, transparent)}',
+
+  /* ── 空态 ── */
+  '.qif-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:30px 20px;text-align:center;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 85%, transparent);font-size:12px;line-height:1.6}',
+  '.qif-emptyMark{font-size:22px;line-height:1;opacity:.5}',
+
+  /* ── 收起态：胶囊启动按钮（悬浮上移 + 品牌点） ── */
+  '.qif-launcher{position:absolute;top:76px;right:16px;pointer-events:auto;display:flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:16px;border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 85%, transparent);background:var(--dsw-alias-bg-overlay);background:color-mix(in srgb, var(--dsw-alias-bg-overlay) 92%, transparent);-webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15);color:var(--dsw-alias-label-primary);font-size:12px;font-weight:500;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 1px 0 color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;animation:qif-in .18s cubic-bezier(.2,.8,.3,1)}',
+  '.qif-launcher:hover{transform:translateY(-1px);border-color:color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, var(--dsw-alias-border-l2));box-shadow:0 10px 26px rgba(0,0,0,.18),inset 0 1px 0 color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent)}',
+  '.qif-launcherDot{flex:none;width:6px;height:6px;border-radius:50%;background:var(--dsw-alias-brand-primary)}',
+  '.qif-launcherCount{font-size:10.5px;font-weight:600;color:var(--dsw-alias-label-secondary)}',
 ].join('')
 
 /**
@@ -256,10 +287,18 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
       item.kind === 'steering' ? React.createElement('span', { className: 'qif-badge' }, '插话') : null,
       item.toolCalls > 0 ? React.createElement('span', { className: 'qif-badge' }, item.toolCalls + ' 工具') : null,
       React.createElement('span', { className: 'qif-time' }, formatTime(item.time)),
+      React.createElement('span', { className: 'qif-go' }, '›'),
     ))
   }
 
-  // 收起态：右上方小胶囊启动按钮（带实时计数）。
+  function emptyState(mark, text) {
+    return React.createElement('div', { className: 'qif-empty' },
+      React.createElement('div', { className: 'qif-emptyMark' }, mark),
+      React.createElement('div', null, text),
+    )
+  }
+
+  // 收起态：右上方小胶囊启动按钮（品牌点 + 实时计数）。
   if (!open) {
     return React.createElement('div', { className: 'qif-wrap', 'data-qi-root': '1' },
       React.createElement('button', {
@@ -268,6 +307,7 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
         title: '展开问题索引',
         onClick: function () { setOpen(true) },
       },
+        React.createElement('span', { className: 'qif-launcherDot' }),
         '问题索引',
         all.length > 0 ? React.createElement('span', { className: 'qif-launcherCount' }, String(all.length)) : null,
       ),
@@ -279,16 +319,18 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
   return React.createElement('div', { className: 'qif-wrap', 'data-qi-root': '1' },
     React.createElement('div', { className: 'qif-panel' },
       React.createElement('div', { className: 'qif-head' },
+        React.createElement('span', { className: 'qif-dot' }),
         React.createElement('span', { className: 'qif-title' }, '问题索引'),
+        all.length > 0 ? React.createElement('span', { className: 'qif-chip' }, String(all.length)) : null,
         React.createElement('button', {
           className: 'qif-btn',
           type: 'button',
           title: '收起面板',
+          'aria-label': '收起面板',
           onClick: function () { setOpen(false) },
-        }, '收起'),
+        }, '‹'),
       ),
       React.createElement('div', { className: 'qif-toolbar' },
-        React.createElement('span', { className: 'qif-count' }, all.length + ' 问'),
         React.createElement('input', {
           className: 'qif-search',
           value: query,
@@ -297,11 +339,11 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
         }),
       ),
       typeof currentId !== 'string' || currentId === ''
-        ? React.createElement('div', { className: 'qif-empty' }, '当前没有会话')
+        ? emptyState('◎', '当前没有会话')
         : (all.length === 0
-          ? React.createElement('div', { className: 'qif-empty' }, '这个会话还没有提问')
+          ? emptyState('❝', '这个会话还没有提问')
           : (shown.length === 0
-            ? React.createElement('div', { className: 'qif-empty' }, '没有匹配的问题')
+            ? emptyState('⌕', '没有匹配的问题')
             : React.createElement('div', { className: 'qif-list' }, items))),
     ),
   )
