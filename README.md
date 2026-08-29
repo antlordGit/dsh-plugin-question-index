@@ -6,6 +6,20 @@
 ![slot] 本插件只做加法：注册 `shell.overlay`（全局浮层）的一个列表条目，不替换任何产品 UI；
 样式引用 `--dsw-alias-*` 主题令牌，明暗主题自动适配。
 
+## 效果展示
+
+### 收起状态
+
+右上角显示紧凑的索引图标和当前问题数量，不遮挡会话正文。
+
+![问题索引收起状态](docs/images/question-index-collapsed.png)
+
+### 展开与定位
+
+展开面板后可浏览、搜索全部问题；点击任一问题，会话内容会自动滚动到对应消息。
+
+![问题索引展开并定位问题](docs/images/question-index-expanded.png)
+
 ## 功能
 
 - **悬浮面板**：固定于窗口右侧（宽 304px，上下留出头部/输入区），不占用会话标签位
@@ -53,39 +67,33 @@ question-index/
 node scripts/build-client.mjs   # 产出 lib/client.js + lib/index.js
 ```
 
-## 给别人安装（分发路径）
+## 安装方式
 
 本包是「双面自挂载」形态：`dsh.client.platform: 'web'` 让宿主自动服务浏览器 bundle，
 `dsh.bundle.patch` 让包自带组合补丁——装上即挂载，无需手改 profile 文件。
 
-**方式一：官方 CLI（npm 发布后）**
+### 方式一：从 GitHub 在线安装
 
 ```bash
-dsh plugin --profile web add dsh-plugin-question-index
+dsh plugin --profile web add github:antlordGit/dsh-plugin-question-index
 ```
 
 命令会安装包、把包名追加进 profile 的 `dsh.profile.bundles`、合入自带的
 `cordis.patch.yml`（单条 insert），重启/热重载后生效。
 
-**方式二：GitHub 仓库（不发布 npm）**
+### 方式二：下载源码后安装
+
+打开 [GitHub 仓库](https://github.com/antlordGit/dsh-plugin-question-index)，点击
+`Code` → `Download ZIP`，解压后进入源码目录：
 
 ```bash
-cd ~/.dsh/profiles/web
-pnpm add github:<你的用户名>/<仓库名>        # 仓库根即本包根
-# 然后把 "dsh-plugin-question-index" 加进 package.json 的 dsh.profile.bundles 数组
+cd /你的路径/dsh-plugin-question-index
+npm install
+npm run build
+dsh plugin --profile web add "$(pwd)"
 ```
 
-**方式三：手动挂载（任何可解析的安装方式）**
-
-装好包后，把下面这行写进 `~/.dsh/profiles/web/cordis.patch.yml`（用户补丁层，热重载生效）：
-
-```yaml
-- insert:
-    - id: question-index
-      name: 'dsh-plugin-question-index'
-```
-
-三种方式等价，任选其一；装完重启 `dsh web`（或等补丁层热重载），任意会话右上角出现
+两种方式任选其一。安装完成后重启 `dsh web`（或等待补丁层热重载），任意会话右上角会出现
 「问题索引」悬浮面板。
 
 > React 不需要安装：客户端 bundle 里的 `require("react")` 由 DSH shell 的模块表提供。
