@@ -522,13 +522,21 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
         agentName: agent.name,
         command: command,
       } }))
-      // Open the exact source session, then its terminal view. The new PTY is
-      // already stored under that sessionId by the source plugin's event bridge.
+      // Open the exact source session, then its terminal-agent tab. Anchor
+      // every lookup on the conversation tablist so we never mistake a row in
+      // the sidebar (or a stray '终端智能体' substring anywhere on the page)
+      // for the real view tab.
       const row = menuRowRef.current
       if (row && row.isConnected && typeof row.click === 'function') row.click()
       window.setTimeout(function () {
-        for (const tab of document.querySelectorAll('button[role="tab"]')) {
-          if ((tab.textContent || '').trim() === '终端') { tab.click(); break }
+        const tablists = document.querySelectorAll('[role="tablist"]')
+        for (const tablist of tablists) {
+          for (const tab of tablist.querySelectorAll('button[role="tab"]')) {
+            if ((tab.textContent || '').trim() !== '终端智能体') continue
+            if (tab.getAttribute('aria-selected') === 'true') return
+            tab.click()
+            return
+          }
         }
       }, 120)
       setHandoffSessionId(null)
