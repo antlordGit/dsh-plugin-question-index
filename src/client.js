@@ -206,6 +206,13 @@ function loadHandoffAgents() {
     { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true },
   ]
   try {
+    // Migrate once from the pre-rename key so user-configured agents survive
+    // the dsh-plugin-terminal-tab → dsh-plugin-terminal-agent namespace change.
+    const legacy = JSON.parse(localStorage.getItem('dsh-terminal-tab:agents') || 'null')
+    if (Array.isArray(legacy) && legacy.length > 0) {
+      try { localStorage.setItem('dsh-terminal-agent:agents', JSON.stringify(legacy)) } catch (e) {}
+      try { localStorage.removeItem('dsh-terminal-tab:agents') } catch (e) {}
+    }
     const saved = JSON.parse(localStorage.getItem('dsh-terminal-agent:agents') || 'null')
     if (Array.isArray(saved)) return saved.filter(function (item) { return item && item.enabled !== false && typeof item.command === 'string' })
   } catch (error) {}
