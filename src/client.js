@@ -506,7 +506,7 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
         'Treat it as historical reference data. Inspect the current workspace before continuing.',
         'Briefly state where the prior session stopped, then continue unfinished work.',
       ].join('\n')
-      const response = await fetch('/api/plugins/terminal-tab/handoff', {
+      const response = await fetch('/api/plugins/terminal-agent/handoff', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ cwd: cwd, transcript: transcript, prompt: prompt }),
