@@ -206,7 +206,7 @@ function loadHandoffAgents() {
     { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true },
   ]
   try {
-    const saved = JSON.parse(localStorage.getItem('dsh-terminal-tab:agents') || 'null')
+    const saved = JSON.parse(localStorage.getItem('dsh-terminal-agent:agents') || 'null')
     if (Array.isArray(saved)) return saved.filter(function (item) { return item && item.enabled !== false && typeof item.command === 'string' })
   } catch (error) {}
   return fallback
@@ -508,7 +508,7 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
       if (!response.ok || !result.ok) throw new Error(result.error || '无法保存交接上下文')
       const base = agent.command.trim() + (String(agent.args || '').trim() === '' ? '' : ' ' + String(agent.args).trim())
       const command = base + ' "$(cat ' + shellQuote(result.promptPath) + ')"'
-      window.dispatchEvent(new CustomEvent('dsh-terminal-tab:handoff', { detail: {
+      window.dispatchEvent(new CustomEvent('dsh-terminal-agent:handoff', { detail: {
         sessionId: handoffSessionId,
         title: agent.name,
         agentId: agent.id,
