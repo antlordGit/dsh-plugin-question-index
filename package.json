@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-question-index",
-  "description": "问题索引：以可收起的悬浮面板展示当前会话的全部提问，支持搜索；点击任一提问自动滚动定位聊天内容到对应位置。",
+  "description": "问题索引：在主聊天区左缘用一组轻量横线表示当前会话的全部提问；悬停显示可滚动的原文浮层，点击自动定位。",
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
