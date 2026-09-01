@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-question-index",
   "description": "问题索引：在主聊天区左缘用一组轻量横线表示当前会话的全部提问；悬停显示可滚动的原文浮层，点击自动定位。",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
