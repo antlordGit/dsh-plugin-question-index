@@ -231,23 +231,63 @@ function extractTrajectory(snapshot) {
   return sections.join('\n\n')
 }
 
-function loadHandoffAgents() {
-  const fallback = [
+/**
+ * 交接弹窗的硬编码回退智能体列表。仅在无法从 terminal-agent 配置接口读到结果时使用,
+ * 与该插件的 `loadAgents()` 默认值保持一致,见 `terminal-agent/src/client.js:166-173`。
+ */
+function getDefaultHandoffAgents() {
+  return [
     { id: 'claude', name: 'Claude', command: 'claude', args: '', enabled: true },
     { id: 'codex', name: 'Codex', command: 'codex', args: '', enabled: true },
   ]
-  try {
-    // Migrate once from the pre-rename key so user-configured agents survive
-    // the dsh-plugin-terminal-tab → dsh-plugin-terminal-agent namespace change.
-    const legacy = JSON.parse(localStorage.getItem('dsh-terminal-tab:agents') || 'null')
-    if (Array.isArray(legacy) && legacy.length > 0) {
-      try { localStorage.setItem('dsh-terminal-agent:agents', JSON.stringify(legacy)) } catch (e) {}
-      try { localStorage.removeItem('dsh-terminal-tab:agents') } catch (e) {}
-    }
-    const saved = JSON.parse(localStorage.getItem('dsh-terminal-agent:agents') || 'null')
-    if (Array.isArray(saved)) return saved.filter(function (item) { return item && item.enabled !== false && typeof item.command === 'string' })
-  } catch (error) {}
-  return fallback
+}
+
+/**
+ * 交接下拉框的标签格式,与 terminal-agent 自己右上角交接弹窗保持一致:
+ * `name（command args）`,无 args 时省略后半段。
+ * 参考 `terminal-agent/src/client.js:1726` 的 label 闭包。
+ */
+function formatHandoffAgentLabel(agent) {
+  const args = (agent.args || '').trim()
+  return agent.name + '（' + agent.command + (args === '' ? '' : ' ' + args) + '）'
+}
+
+/**
+ * 与终端智能体设置页同步启用的智能体列表。
+ * 数据源:terminal-agent 已有的服务端配置端点 `GET /api/plugins/terminal-agent/agents`,
+ * 设置页保存的智能体全部存在那里,这里不重新维护一份。
+ *
+ * 传入 `enabled=true` 才发起请求(弹窗打开时),关闭时保留上次结果,避免来回切换反复请求。
+ */
+function useHandoffAgents(enabled) {
+  const state = React.useState(getDefaultHandoffAgents())
+  const agents = state[0]
+  const setAgents = state[1]
+  React.useEffect(function () {
+    if (!enabled) return
+    let cancelled = false
+    fetch('/api/plugins/terminal-agent/agents', { method: 'GET' })
+      .then(function (response) { return response.ok ? response.json() : null })
+      .then(function (payload) {
+        if (cancelled) return
+        const list = payload && payload.value && Array.isArray(payload.value.agents) ? payload.value.agents : null
+        if (list === null) return
+        const filtered = list
+          .filter(function (item) { return item && item.enabled !== false && typeof item.command === 'string' })
+          .map(function (item) {
+            return {
+              id: String(item.id),
+              name: String(item.name || item.id),
+              command: String(item.command),
+              args: typeof item.args === 'string' ? item.args : '',
+            }
+          })
+        if (filtered.length > 0) setAgents(filtered)
+      })
+      .catch(function () { /* 保留默认值 */ })
+    return function () { cancelled = true }
+  }, [enabled])
+  return agents
 }
 
 function shellQuote(value) { return "'" + String(value).replace(/'/g, "'\\''") + "'" }
@@ -420,7 +460,7 @@ function HandoffAgentSelect(props) {
         else if (event.key === 'Escape') { event.preventDefault(); setOpen(false) }
       },
     },
-      React.createElement('span', null, selected ? selected.name : '暂无可用智能体'),
+      React.createElement('span', null, selected ? formatHandoffAgentLabel(selected) : '暂无可用智能体'),
       React.createElement('span', { className: 'qif-agentSelectChevron', 'aria-hidden': 'true' })),
     open ? React.createElement('div', { className: 'qif-agentSelectMenu', role: 'listbox', 'aria-label': '选择智能体' },
       props.agents.map(function (agent) {
@@ -429,7 +469,7 @@ function HandoffAgentSelect(props) {
           'aria-selected': String(selected !== null && selected.id === agent.id),
           onClick: function () { props.onChange(agent.id); setOpen(false) },
           onKeyDown: function (event) { if (event.key === 'Escape') { event.preventDefault(); setOpen(false) } },
-        }, agent.name)
+        }, formatHandoffAgentLabel(agent))
       })) : null)
 }
 
@@ -464,6 +504,9 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
   const menuSessionRef = React.useRef('')
   const menuRowRef = React.useRef(null)
   const stageRef = React.useRef(null)
+
+  // 弹窗打开时拉取终端智能体设置页的最新启用列表;关闭期间保留上次结果。
+  const handoffAgents = useHandoffAgents(handoffSessionId !== null)
 
   // 当前会话的对话快照订阅：随会话切换自动重挂（currentId 是唯一依赖）。
   React.useEffect(function () {
@@ -528,8 +571,7 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
           event.stopPropagation()
           const id = menuSessionRef.current
           if (id === '') return
-          const agents = loadHandoffAgents()
-          setHandoffAgentId(agents[0] ? agents[0].id : '')
+          setHandoffAgentId(handoffAgents[0] ? handoffAgents[0].id : '')
           setHandoffError('')
           setHandoffSessionId(id)
           // Never remove the host's React-owned menu node directly. Ask the
@@ -550,7 +592,7 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
       document.removeEventListener('pointerdown', rememberSession, true)
       for (const item of document.querySelectorAll('[data-qif-handoff-action]')) item.remove()
     }
-  }, [sessionState])
+  }, [sessionState, handoffAgents])
 
   // 动态定位：把 .qif-stage 的 left 锚到聊天滚动容器的左缘，
   // 避免窄屏下侵入左侧工作区。依赖 conversationVisible，
@@ -586,8 +628,7 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
 
   async function confirmHandoff() {
     if (handoffSessionId === null || handoffBusy) return
-    const agents = loadHandoffAgents()
-    const agent = agents.find(function (item) { return item.id === handoffAgentId }) || agents[0]
+    const agent = handoffAgents.find(function (item) { return item.id === handoffAgentId }) || handoffAgents[0]
     const item = sessionState.byId && sessionState.byId[handoffSessionId]
     const binding = sessions && typeof sessions.binding === 'function' ? sessions.binding(handoffSessionId) : null
     const session = binding && binding.session
@@ -694,7 +735,6 @@ function QuestionIndexOverlay(props, sessions, jumpToQuestion) {
 
   if (!conversationVisible && handoffSessionId === null) return null
 
-  const handoffAgents = loadHandoffAgents()
   const handoffItem = handoffSessionId === null || !sessionState.byId ? null : sessionState.byId[handoffSessionId]
   return React.createElement('div', { className: 'qif-wrap', 'data-qi-root': '1' },
     handoffSessionId !== null ? React.createElement('div', { className: 'qif-handoffMask' },
